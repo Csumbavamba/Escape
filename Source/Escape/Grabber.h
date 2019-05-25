@@ -1,0 +1,46 @@
+// Fill out your copyright notice in the Description page of Project Settings.
+
+#pragma once
+
+#include "CoreMinimal.h"
+#include "Components/ActorComponent.h"
+#include "Grabber.generated.h"
+
+class APlayerController;
+class AActor;
+class UPhysicsHandleComponent;
+class UInputComponent;
+
+UCLASS( ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )
+class ESCAPE_API UGrabber : public UActorComponent	
+{	
+	GENERATED_BODY()
+
+public:	
+	// Sets default values for this component's properties
+	UGrabber();
+
+protected:
+	// Called when the game starts
+	virtual void BeginPlay() override;
+
+public:	
+	// Called every frame
+	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
+
+	// Returns Null if it cannot find any
+	AActor* FindActorInRange();
+
+	// Raycast and Grab what's in reach
+	void Grab();
+
+private:
+
+	UPROPERTY(EditAnywhere)
+	float GrabReach = 100.0f;
+
+	UPhysicsHandleComponent* PhysicsHandle = nullptr;
+	APlayerController* PlayerController = nullptr;
+	UInputComponent* InputComponent = nullptr;
+		
+};
