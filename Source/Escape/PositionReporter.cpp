@@ -21,9 +21,10 @@ void UPositionReporter::BeginPlay()
 	Super::BeginPlay();
 
 	// ...
-	FString name = GetOwner()->GetName();
+	FString ObjectName = GetOwner()->GetName();
+	FVector ObjectPosition = GetOwner()->GetTransform().GetLocation();
 
-	UE_LOG(LogTemp, Warning, TEXT("Position report for %s."), *name);
+	UE_LOG(LogTemp, Warning, TEXT("%s is at %s."), *ObjectName, *ObjectPosition.ToString());
 	
 }
 
