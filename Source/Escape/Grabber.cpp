@@ -8,6 +8,7 @@
 #include "PhysicsEngine/PhysicsHandleComponent.h"
 #include "DrawDebugHelpers.h"
 #include "Components/InputComponent.h"
+#include "Components/PrimitiveComponent.h"
 
 #define OUT
 
@@ -27,21 +28,18 @@ void UGrabber::BeginPlay()
 {
 	Super::BeginPlay();
 
-	// ...
+	// Find the Player controller
 	PlayerController = GetWorld()->GetFirstPlayerController();
 
 	/// Look for attached Physics Handle
-	PhysicsHandle = GetOwner()->FindComponentByClass<UPhysicsHandleComponent>();
-
-	// If the handle is not found
-	if (!PhysicsHandle)
-	{
-		// Log Error
-		FString OwnerName = GetOwner()->GetName();
-		UE_LOG(LogTemp, Error, TEXT("Physics Handle was not found on: %s"), *OwnerName);
-	}
+	FindPhysicsHandleComponent();
 
 	/// Look for attached Input Component
+	FindAndBindInputComponent();
+}
+
+void UGrabber::FindAndBindInputComponent()
+{
 	InputComponent = GetOwner()->FindComponentByClass<UInputComponent>();
 
 	// If the input component is not found
@@ -55,6 +53,20 @@ void UGrabber::BeginPlay()
 	{
 		// Bind Actions
 		InputComponent->BindAction("Grab", IE_Pressed, this, &UGrabber::Grab);
+		InputComponent->BindAction("Grab", IE_Released, this, &UGrabber::Release);
+	}
+}
+
+void UGrabber::FindPhysicsHandleComponent()
+{
+	PhysicsHandle = GetOwner()->FindComponentByClass<UPhysicsHandleComponent>();
+
+	// If the handle is not found
+	if (!PhysicsHandle)
+	{
+		// Log Error
+		FString OwnerName = GetOwner()->GetName();
+		UE_LOG(LogTemp, Error, TEXT("Physics Handle was not found on: %s"), *OwnerName);
 	}
 }
 
@@ -65,14 +77,19 @@ void UGrabber::TickComponent(float DeltaTime, ELevelTick TickType, FActorCompone
 	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
 
 	// ...
-
-	FindActorInRange();
 	
+	// If the physics Handle is attached
+	if (PhysicsHandle->GrabbedComponent)
+	{
+		// Find the  end of the Reach Line
+		FVector LineTraceEnd = FindGrabReachEnd();
 
-	
+		// Move the object that we are holding each frame
+		PhysicsHandle->SetTargetLocation(LineTraceEnd);
+	}
 }
 
-AActor* UGrabber::FindActorInRange()
+const FHitResult UGrabber::FindFirstPhysicsBodyInReach()
 {
 	/// Get the player viewpoint
 	FVector Location;;
@@ -83,18 +100,6 @@ AActor* UGrabber::FindActorInRange()
 		OUT Rotation);
 
 	FVector LineTraceEnd = Location + Rotation.Vector() * GrabReach;
-
-	/// Debug Draw the raycast
-	DrawDebugLine(
-		GetWorld(),
-		Location,
-		LineTraceEnd,
-		FColor(0, 255, 0),
-		false,
-		0.0f,
-		0.0f,
-		10.0f
-	);
 
 	/// Setup querry params
 	FHitResult Hit;
@@ -116,17 +121,63 @@ AActor* UGrabber::FindActorInRange()
 		// TODO Remove this when no longer needed
 		FString HitActorName = Hit.GetActor()->GetName();
 		UE_LOG(LogTemp, Warning, TEXT("Line trace hit: %s"), *HitActorName);
-
-		// Return the Actor that was hit
-		return Hit.GetActor();
 	}
 
 	// If nothing was found return null
-	return nullptr;
+	return Hit;
+}
+
+FVector UGrabber::FindGrabReachEnd()
+{
+	/// Get the player viewpoint
+	FVector Location;;
+	FRotator Rotation;
+
+	PlayerController->GetPlayerViewPoint(
+		OUT Location,
+		OUT Rotation);
+
+	FVector LineTraceEnd = Location + Rotation.Vector() * GrabReach;
+
+	return LineTraceEnd;
 }
 
 void UGrabber::Grab()
 {
 	UE_LOG(LogTemp, Warning, TEXT("Grab Pressed!"));
+
+	// Line Trace and see if we reach actors with physicsBody collision channel set
+	auto HitResult = FindFirstPhysicsBodyInReach();
+	auto ActorHit = HitResult.GetActor();
+
+	// If we hit something
+	if (ActorHit)
+	{
+		FString ActorName = ActorHit->GetName();
+		UE_LOG(LogTemp, Warning, TEXT("%s can be picked up!"), *ActorName);
+
+		auto ComponentToGrab = HitResult.GetComponent();
+
+		// Attach the physics Body
+		PhysicsHandle->GrabComponentAtLocationWithRotation(
+			ComponentToGrab,
+			NAME_None,
+			ComponentToGrab->GetOwner()->GetActorLocation(),
+			ComponentToGrab->GetOwner()->GetActorRotation()
+		);	
+	}
+	else
+	{
+		UE_LOG(LogTemp, Warning, TEXT("There is nothing in range to be picked up."));
+	}
+
+	
+}
+
+void UGrabber::Release()
+{
+	UE_LOG(LogTemp, Warning, TEXT("Grab Released!"));
+
+	PhysicsHandle->ReleaseComponent();
 }
 

@@ -28,13 +28,17 @@ public:
 	// Called every frame
 	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
 
-	// Returns Null if it cannot find any
-	AActor* FindActorInRange();
+private:
+
+	void FindPhysicsHandleComponent();
+	void FindAndBindInputComponent();
+
+	const FHitResult FindFirstPhysicsBodyInReach();
+	FVector FindGrabReachEnd();
 
 	// Raycast and Grab what's in reach
 	void Grab();
-
-private:
+	void Release();
 
 	UPROPERTY(EditAnywhere)
 	float GrabReach = 100.0f;
