@@ -8,6 +8,7 @@
 
 class ATriggerVolume;
 
+DECLARE_DYNAMIC_MULTICAST_DELEGATE(FDoorEvent); // This allows BlueprintAssignable
 
 UCLASS( ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )
 class ESCAPE_API UOpenDoor : public UActorComponent
@@ -22,26 +23,26 @@ protected:
 	// Called when the game starts
 	virtual void BeginPlay() override;
 
-	void OpenDoor();
-	void CloseDoor();
-
 public:	
 	// Called every frame
 	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
 
-		
+	UPROPERTY(BlueprintAssignable)
+	FDoorEvent OnOpen; // This is an event
+
+	UPROPERTY(BlueprintAssignable)
+	FDoorEvent OnClose; // This is an event
+
 private:
 
-	UPROPERTY(EditAnywhere)
-	float OpenAngle = 90.0f;
+	// Returns mass in KGs
+	float GetTotalMassOfActorsOnPlate();
 
 	UPROPERTY(EditAnywhere)
-	ATriggerVolume* PressurePlate = NULL; // Pawn inherits from Actor
+	float TriggerMass = 50.0f;
 
 	UPROPERTY(EditAnywhere)
-	float DoorCloseDelay = 1.0f;
+	ATriggerVolume* PressurePlate = nullptr;
 
-	float DoorLastOpen;
-	AActor* ActorThatOpens = nullptr;
 	AActor* Owner = nullptr;
 };

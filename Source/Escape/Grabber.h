@@ -30,14 +30,25 @@ public:
 
 private:
 
+	// Look for attached Physics Handle
 	void FindPhysicsHandleComponent();
-	void FindAndBindInputComponent();
 
+	// Look for attached Input Component - If Found Bind Actions
+	void SetupInputComponent();
+
+	// Raycast to find the first Physics body in reach
 	const FHitResult FindFirstPhysicsBodyInReach();
-	FVector FindGrabReachEnd();
+
+	// Return current end point of reach
+	FVector GetGrabReachEnd() const;
+
+	// Return starting point of grab reach
+	FVector GetGrabReachStart() const;
 
 	// Raycast and Grab what's in reach
 	void Grab();
+
+	// Release the Physics Component that is grabbed
 	void Release();
 
 	UPROPERTY(EditAnywhere)
